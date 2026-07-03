@@ -8,7 +8,7 @@ verification.
 To import `ed25519-dalek`, add the following to the dependencies section of
 your project's `Cargo.toml`:
 ```toml
-ed25519-dalek = "3.0.0-pre.6"
+ed25519-dalek = "3.0.0-rc.1"
 ```
 
 # Feature Flags
@@ -17,7 +17,7 @@ This crate is `#[no_std]` compatible with `default-features = false`.
 
 | Feature                | Default? | Description |
 | :---                   | :---     | :---        |
-| `alloc`                | ✓        | When `pkcs8` is enabled, implements `EncodePrivateKey`/`EncodePublicKey` for `SigningKey`/`VerifyingKey`, respectively. |
+| `alloc`                |          | When `pkcs8` is enabled, implements `EncodePrivateKey`/`EncodePublicKey` for `SigningKey`/`VerifyingKey`, respectively. |
 | `fast`                 | ✓        | Enables the use of precomputed tables for curve arithmetic. Makes key generation, signing, and verifying faster. |
 | `zeroize`              | ✓        | Implements `Zeroize` and `ZeroizeOnDrop` for `SigningKey` |
 | `rand_core`            |          | Enables `SigningKey::generate` |

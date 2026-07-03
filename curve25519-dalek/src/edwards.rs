@@ -1461,7 +1461,7 @@ impl Debug for EdwardsPoint {
 impl group::Group for EdwardsPoint {
     type Scalar = Scalar;
 
-    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_random<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         let mut repr = CompressedEdwardsY([0u8; 32]);
         loop {
             rng.try_fill_bytes(&mut repr.0)?;
@@ -1713,13 +1713,13 @@ impl Zeroize for SubgroupPoint {
 impl group::Group for SubgroupPoint {
     type Scalar = Scalar;
 
-    fn try_from_rng<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
+    fn try_random<R: TryRng + ?Sized>(rng: &mut R) -> Result<Self, R::Error> {
         use group::ff::Field;
 
         // This will almost never loop, but `Group::random` is documented as returning a
         // non-identity element.
         let s = loop {
-            let s: Scalar = Field::try_from_rng(rng)?;
+            let s: Scalar = Field::try_random(rng)?;
             if !s.is_zero_vartime() {
                 break s;
             }
@@ -2453,25 +2453,26 @@ mod test {
 
     #[test]
     #[cfg(feature = "serde")]
-    fn serde_bincode_basepoint_roundtrip() {
-        use bincode;
-
-        let encoded = bincode::serialize(&constants::ED25519_BASEPOINT_POINT).unwrap();
-        let enc_compressed = bincode::serialize(&constants::ED25519_BASEPOINT_COMPRESSED).unwrap();
+    fn serde_postcard_basepoint_roundtrip() {
+        let encoded = postcard::to_allocvec(&constants::ED25519_BASEPOINT_POINT).unwrap();
+        let enc_compressed =
+            postcard::to_allocvec(&constants::ED25519_BASEPOINT_COMPRESSED).unwrap();
         assert_eq!(encoded, enc_compressed);
 
         // Check that the encoding is 32 bytes exactly
         assert_eq!(encoded.len(), 32);
 
-        let dec_uncompressed: EdwardsPoint = bincode::deserialize(&encoded).unwrap();
-        let dec_compressed: CompressedEdwardsY = bincode::deserialize(&encoded).unwrap();
+        let dec_uncompressed: EdwardsPoint = postcard::from_bytes(&encoded).unwrap();
+        let dec_compressed: CompressedEdwardsY = postcard::from_bytes(&encoded).unwrap();
 
         assert_eq!(dec_uncompressed, constants::ED25519_BASEPOINT_POINT);
         assert_eq!(dec_compressed, constants::ED25519_BASEPOINT_COMPRESSED);
 
-        // Check that the encoding itself matches the usual one
+        // Check that the encoding itself matches the usual one.
+        // serde::Deserialize on fixed-size arrays calls tuple deserialization. postcard
+        // (de)serializes tuples by just doing each element and that's it.
         let raw_bytes = constants::ED25519_BASEPOINT_COMPRESSED.as_bytes();
-        let bp: EdwardsPoint = bincode::deserialize(raw_bytes).unwrap();
+        let bp: EdwardsPoint = postcard::from_bytes(raw_bytes).unwrap();
         assert_eq!(bp, constants::ED25519_BASEPOINT_POINT);
     }
 
