@@ -39,8 +39,8 @@ impl RistrettoPoint {
         RistrettoPoint::map_to_curve_restricted(fe_bytes)
     }
 
-    /// Decode 16 bytes of data from a RistrettoPoint, using [`lizard_encode`]. Returns `None` if
-    /// this point was not generated using Lizard.
+    /// Decode 16 bytes of data from a RistrettoPoint, using [`RistrettoPoint::lizard_encode`].
+    /// Returns `None` if this point was not generated using Lizard.
     pub fn lizard_decode<D>(&self) -> Option<[u8; 16]>
     where
         D: Digest<OutputSize = U32> + HashMarker,
