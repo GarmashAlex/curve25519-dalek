@@ -33,12 +33,13 @@ impl RistrettoPoint {
         fe_bytes[8..24].copy_from_slice(data);
         // Clear the appropriate bits to be able to call map_to_curve_restricted
         fe_bytes[31] &= 0b00111111;
+        // Clearing the lowest bit makes the field element positive
         fe_bytes[0] &= 0b11111110;
 
         RistrettoPoint::map_to_curve_restricted(fe_bytes)
     }
 
-    /// Decode 16 bytes of data from a RistrettoPoint, using the Lizard method. Returns `None` if
+    /// Decode 16 bytes of data from a RistrettoPoint, using [`lizard_encode`]. Returns `None` if
     /// this point was not generated using Lizard.
     pub fn lizard_decode<D>(&self) -> Option<[u8; 16]>
     where
@@ -47,6 +48,9 @@ impl RistrettoPoint {
         let mut result: [u8; 16] = Default::default();
         let fes = self.elligator_ristretto_flavor_inverse();
         let mut n_found = 0;
+        // elligator_ristretto_flavor_inverse returns 8 positive solutions followed by 8 negative
+        // solutions. Since lizard_encode only ever encodes positive field elements, it suffices to
+        // just check those
         for fe in fes.into_iter().take(8) {
             let mut ok = fe.is_some();
             let fe = fe.unwrap_or(FieldElement::ZERO);
@@ -70,8 +74,9 @@ impl RistrettoPoint {
         if n_found == 1 { Some(result) } else { None }
     }
 
-    /// Computes the at most 8 positive FieldElements f such that `self ==
-    /// RistrettoPoint::elligator_ristretto_flavor(f)`.
+    /// Computes the FieldElements f such that `self ==
+    /// RistrettoPoint::elligator_ristretto_flavor(f)`. The first 8 elements are positive (if
+    /// defined), and the last 8 elements are negative (if defined).
     fn elligator_ristretto_flavor_inverse(&self) -> [CtOption<FieldElement>; 16] {
         // Elligator2 computes a Point from a FieldElement in two steps: first
         // it computes a (s,t) on the Jacobi quartic and then computes the
